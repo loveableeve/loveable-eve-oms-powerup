@@ -4,34 +4,265 @@
   <meta charset="utf-8">
   <title>Loveable Eve OMS</title>
 </head>
+
 <body>
 
 <script src="https://p.trellocdn.com/power-up.min.js"></script>
 
 <script>
-window.TrelloPowerUp.initialize({
+
+const TrelloPowerUp = window.TrelloPowerUp;
+
+
+// ============================================================
+// LOVEABLE EVE OMS
+// CARD BADGE DISPLAY
+//
+// Trello Custom Fields:
+//
+// OMS Items
+// Example:
+// 1 x Cherry Balance 30 | 1 x Cherry Rosé Large Wash | 2 x Golden Hour Bar Soap
+//
+// OMS Amount
+// Example:
+// 7900
+//
+// ============================================================
+
+
+// ============================================================
+// BADGE WIDTH
+//
+// Based on our actual Trello testing:
+//
+// Desktop ≈ 30 characters per row
+// Mobile  ≈ 42 characters per row
+//
+// We pad each item badge to at least 30 characters with
+// non-breaking spaces.
+//
+// This encourages Trello to wrap every item onto its own row.
+// ============================================================
+
+const BADGE_MIN_WIDTH = 30;
+
+
+// ============================================================
+// PAD BADGE WITH NON-BREAKING SPACES
+// ============================================================
+
+function padBadge(text) {
+
+  text = String(text || "").trim();
+
+  if (!text) {
+    return "";
+  }
+
+  let paddingNeeded = BADGE_MIN_WIDTH - text.length;
+
+  if (paddingNeeded < 0) {
+    paddingNeeded = 0;
+  }
+
+  return text + "\u00A0".repeat(paddingNeeded);
+}
+
+
+// ============================================================
+// FORMAT AMOUNT
+// ============================================================
+
+function formatAmount(value) {
+
+  if (value === null || value === undefined || value === "") {
+    return "";
+  }
+
+  let amount = Number(value);
+
+  if (isNaN(amount)) {
+    return String(value);
+  }
+
+  return "$" + amount.toLocaleString("en-US", {
+    maximumFractionDigits: 2
+  });
+}
+
+
+// ============================================================
+// GET CUSTOM FIELD VALUE
+// ============================================================
+
+function getCustomFieldValue(fieldName, customFields, customFieldItems) {
+
+  const field = customFields.find(function(cf) {
+    return cf.name === fieldName;
+  });
+
+  if (!field) {
+    return "";
+  }
+
+
+  const item = customFieldItems.find(function(cfi) {
+    return cfi.idCustomField === field.id;
+  });
+
+  if (!item || !item.value) {
+    return "";
+  }
+
+
+  // TEXT FIELD
+  if (item.value.text !== undefined) {
+    return item.value.text;
+  }
+
+
+  // NUMBER FIELD
+  if (item.value.number !== undefined) {
+    return item.value.number;
+  }
+
+
+  // DATE FIELD
+  if (item.value.date !== undefined) {
+    return item.value.date;
+  }
+
+
+  // CHECKBOX FIELD
+  if (item.value.checked !== undefined) {
+    return item.value.checked;
+  }
+
+
+  return "";
+}
+
+
+// ============================================================
+// CARD BADGES
+// ============================================================
+
+TrelloPowerUp.initialize({
+
   "card-badges": function(t, opts) {
 
-    // Invisible spacing used only to encourage Trello
-    // to wrap each product badge onto its own row.
-    const spacer = "\u2028";
+    return Promise.all([
 
-    return [
-      {
-        text: "1 × CB 30\u20281 × Large CR\u20282 × GHBS\u2028$7,900" + spacer
-      },
-      {
-        text: "1 × CB 30\u20291 × Large CR\u20292 × GHBS\u2029$7,900" + spacer
-      },
-      {
-        text: "2 × GHBS" + spacer
-      },
-      {
-        text: "$7,900"
+      t.board("customFields"),
+
+      t.card("customFieldItems")
+
+    ]).then(function(results) {
+
+
+      const board = results[0];
+      const card = results[1];
+
+
+      const customFields =
+        board.customFields || [];
+
+
+      const customFieldItems =
+        card.customFieldItems || [];
+
+
+      // ========================================================
+      // READ OMS ITEMS
+      // ========================================================
+
+      const itemsValue =
+        getCustomFieldValue(
+          "OMS Items",
+          customFields,
+          customFieldItems
+        );
+
+
+      // ========================================================
+      // READ OMS AMOUNT
+      // ========================================================
+
+      const amountValue =
+        getCustomFieldValue(
+          "OMS Amount",
+          customFields,
+          customFieldItems
+        );
+
+
+      const badges = [];
+
+
+      // ========================================================
+      // PRODUCTS
+      //
+      // Stored in Trello as:
+      //
+      // Product 1 | Product 2 | Product 3
+      //
+      // Each becomes its own badge.
+      // ========================================================
+
+      if (itemsValue) {
+
+        const products =
+          String(itemsValue)
+            .split("|")
+            .map(function(item) {
+              return item.trim();
+            })
+            .filter(function(item) {
+              return item !== "";
+            });
+
+
+        products.forEach(function(product) {
+
+          badges.push({
+
+            text: padBadge(product)
+
+          });
+
+        });
+
       }
-    ];
+
+
+      // ========================================================
+      // TOTAL
+      // ========================================================
+
+      if (amountValue !== "") {
+
+        const formattedAmount =
+          formatAmount(amountValue);
+
+
+        badges.push({
+
+          text: padBadge(formattedAmount)
+
+        });
+
+      }
+
+
+      return badges;
+
+    });
+
   }
+
 });
+
 </script>
 
 </body>
