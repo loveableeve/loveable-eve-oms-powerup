@@ -11,12 +11,24 @@
 <script>
 window.TrelloPowerUp.initialize({
   "card-badges": function(t, opts) {
+
+    // Invisible spacing used only to encourage Trello
+    // to wrap each product badge onto its own row.
+    const spacer = "\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0";
+
     return [
-      { text: "1 × CB 30" },
-      { text: "1 × CB 30\n1 × Large CR\n2 × GHBS" },
-      { text: "1 × Large CR" },
-      { text: "2 × GHBS" },
-      { text: "$7,900" }
+      {
+        text: "1 × CB 30" + spacer
+      },
+      {
+        text: "1 × Large CR" + spacer
+      },
+      {
+        text: "2 × GHBS" + spacer
+      },
+      {
+        text: "$7,900"
+      }
     ];
   }
 });
